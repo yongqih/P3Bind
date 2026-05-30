@@ -43,3 +43,37 @@ The expected columns are:
 
 ```bash
 python scripts/01_make_splits.py
+```
+
+### 2. Run baselines
+```bash
+python scripts/02_run_baselines.py
+```
+
+### 3. Train CNN-concat model
+```bash
+python scripts/03_train_cnn_concat.py
+```
+
+### 4. Train interaction-map model
+```bash
+python scripts/04_train_interaction_map.py
+```
+### 5. Train interaction-map + MJ model
+```bash
+python scripts/05_train_interaction_map_mj.py
+```
+
+| Model                | Random Pearson | PBM-heldout Pearson | PDZ-heldout Pearson |
+| -------------------- | -------------: | ------------------: | ------------------: |
+| RF PDZ+PBM           |          0.799 |               0.762 |               0.357 |
+| CNN-concat           |          0.621 |               0.621 |               0.456 |
+| Interaction-map      |          0.734 |               0.675 |               0.483 |
+| Interaction-map + MJ |          0.740 |               0.730 |               0.488 |
+
+## Citation
+Manuscript in preparation
+
+## License
+MIT License.
+
