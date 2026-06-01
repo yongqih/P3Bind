@@ -72,8 +72,24 @@ python scripts/05_train_interaction_map_mj.py
 | Interaction-map + MJ |          0.740 |               0.730 |               0.488 |
 
 ## Citation
-Manuscript in preparation
+[1]	Lee, Ho-Jin, and Jie J. Zheng. "PDZ domains and their binding partners: structure, specificity, and modification." Cell communication and Signaling 8.1 (2010): 8.
 
-## License
-MIT License.
+[2]	Christensen, Nikolaj R., et al. "PDZ domains as drug targets." Advanced therapeutics 2.7 (2019): 1800143.
+
+[3]	Manjunath, G. P., Praveena L. Ramanujam, and Sanjeev Galande. "Structure function relations in PDZ-domain-containing proteins: Implications for protein networks in cellular signalling." Journal of biosciences 43.1 (2018): 155-171.
+
+[4]	Harris, Baruch Z., and Wendell A. Lim. "Mechanism and role of PDZ domains in signaling complex assembly." Journal of cell science 114.18 (2001): 3219-3231.
+
+[5]	Cha, Boyoung, et al. "PDZ domain-dependent regulation of NHE3 protein by both internal Class II and C-terminal Class I PDZ-binding motifs." Journal of Biological Chemistry 292.20 (2017): 8279-8290.
+
+[6]	Gogl, Gergo, et al. "Quantitative fragmentomics allow affinity mapping of interactomes." Nature communications 13.1 (2022): 5472.
+
+[7]	Honrubia, Jose M., et al. "Interaction between SARS-CoV PBM and Cellular PDZ Domains Leading to Virus Virulence." Viruses 16.8 (2024): 1214.
+
+[8]	Wang, Conan K., et al. "Extensions of PDZ domains as important structural and functional elements." Protein & cell 1.8 (2010): 737-751.
+
+[9]	Cong, Shuang, and Yang Zhou. "A review of convolutional neural network architectures and their optimizations." Artificial Intelligence Review 56.3 (2023): 1905.
+
+
+
 
