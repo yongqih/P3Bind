@@ -1,4 +1,4 @@
-# PDZ-PBM Affinity Prediction and Motif Design
+# P3Bind
 
 This repository contains code for benchmarking and designing PDZ-binding motifs using sequence-based machine learning and interaction-aware neural network models.
 
