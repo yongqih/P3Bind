@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "p3bind"
+version = "0.1.0"
+description = "P3Bind: PDZ-PBM affinity prediction and PBM motif design"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{name = "Yongqi Huang", email = "yongqi@seas.upenn.edu"}]
+license = {text = "MIT"}
+dependencies = [
+  "numpy>=1.24",
+  "pandas>=2.0",
+  "torch>=2.3",
+  "scikit-learn>=1.3",
+  "matplotlib>=3.7",
+  "seaborn>=0.12",
+  "scipy>=1.10",
+  "tqdm>=4.66",
+  "biopython>=1.81"
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]

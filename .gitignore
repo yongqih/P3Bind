@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.idea/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data and generated results
+/data/raw/*
+!/data/raw/README.md
+/data/processed/*
+!/data/processed/README.md
+!/data/processed/background_pdz.example.csv
+/data/splits/*
+!/data/splits/README.md
+/results/*
+!/results/README.md
+!/results/predictions/
+!/results/figures/
+
+# Checkpoints: ignored by default. Force-add final weights if releasing runnable inference.
+/checkpoints/design_models/*
+!/checkpoints/design_models/README.md
+
+# Logs/cache
+wandb/
+*.log
+.DS_Store

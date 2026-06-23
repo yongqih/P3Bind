@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+title: "P3Bind: An interaction-aware sequence framework for quantitative PDZ-PBM affinity prediction and motif design"
+authors:
+  - family-names: Huang
+    given-names: Yongqi
+    email: yongqi@seas.upenn.edu
+version: 0.1.0
+date-released: 2026-06-23
+message: "If you use this software or model outputs, please cite this repository and acknowledge Yongqi Huang."
+repository-code: "https://github.com/yongqih/P3Bind"
+license: MIT
