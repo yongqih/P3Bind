@@ -142,3 +142,82 @@ def specificity_profile(
         "n_models": int(target_res["n_models"]),
     }
     return summary, bg
+
+
+def single_mutant_pbm6_sequences(pbm_or_peptide: str) -> list[dict]:
+    """Generate all 6 x 19 single-amino-acid mutants for a PBM6 sequence."""
+    pbm6 = validate_pbm6(pbm_or_peptide)
+    rows = []
+    for pos in range(6):
+        original = pbm6[pos]
+        for aa in AA_ORDER:
+            if aa == original:
+                continue
+            mutant = pbm6[:pos] + aa + pbm6[pos + 1:]
+            rows.append({
+                "position": pos + 1,
+                "original_aa": original,
+                "mutant_aa": aa,
+                "mutant_pbm6": mutant,
+            })
+    return rows
+
+
+def mutation_scan(
+    target_pdz_sequence: str,
+    pbm_or_peptide: str,
+    checkpoint_dir: Optional[str | Path] = None,
+    background_csv: Optional[str | Path] = None,
+) -> pd.DataFrame:
+    """
+    Run a PBM6 single-mutant scan.
+
+    If background_csv is provided, the output includes delta_specificity. This is slower because
+    every mutant is also scored against the background PDZ set.
+    """
+    target_pdz_sequence = validate_pdz_sequence(target_pdz_sequence)
+    pbm6 = validate_pbm6(pbm_or_peptide)
+    models, _ = load_models(checkpoint_dir)
+
+    baseline = predict_pair(target_pdz_sequence, pbm6, models=models)
+    baseline_pkd = baseline["predicted_pKd_mean"]
+
+    baseline_specificity = None
+    if background_csv is not None:
+        baseline_summary, _ = specificity_profile(
+            target_pdz_sequence=target_pdz_sequence,
+            pbm_or_peptide=pbm6,
+            background_csv=background_csv,
+            checkpoint_dir=checkpoint_dir,
+        )
+        baseline_specificity = baseline_summary["specificity_score"]
+
+    out_rows = []
+    for row in single_mutant_pbm6_sequences(pbm6):
+        mutant = row["mutant_pbm6"]
+        pred = predict_pair(target_pdz_sequence, mutant, models=models)
+        result = {
+            "pbm6_wt": pbm6,
+            **row,
+            "target_pKd_mean": pred["predicted_pKd_mean"],
+            "target_pKd_std": pred["predicted_pKd_std"],
+            "wt_target_pKd_mean": baseline_pkd,
+            "delta_pKd": pred["predicted_pKd_mean"] - baseline_pkd,
+        }
+        if background_csv is not None:
+            summary, _ = specificity_profile(
+                target_pdz_sequence=target_pdz_sequence,
+                pbm_or_peptide=mutant,
+                background_csv=background_csv,
+                checkpoint_dir=checkpoint_dir,
+            )
+            result.update({
+                "specificity_score": summary["specificity_score"],
+                "wt_specificity_score": baseline_specificity,
+                "delta_specificity": summary["specificity_score"] - baseline_specificity,
+                "background_pKd_mean": summary["background_pKd_mean"],
+                "max_background_pKd": summary["max_background_pKd"],
+            })
+        out_rows.append(result)
+
+    return pd.DataFrame(out_rows)

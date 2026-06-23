@@ -1,32 +1,115 @@
-# Python
+# ---------------------------------------------------------------------
+# Python / environment
+# ---------------------------------------------------------------------
 __pycache__/
 *.py[cod]
+*.pyo
+*.pyd
+*.so
+.Python
 .venv/
 venv/
-.env
-.idea/
+env/
+ENV/
+conda-meta/
+pip-wheel-metadata/
+*.egg-info/
+.eggs/
+dist/
+build/
 
+# ---------------------------------------------------------------------
+# IDE / OS files
+# ---------------------------------------------------------------------
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# ---------------------------------------------------------------------
 # Jupyter
+# ---------------------------------------------------------------------
 .ipynb_checkpoints/
 
-# Data and generated results
-/data/raw/*
-!/data/raw/README.md
-/data/processed/*
-!/data/processed/README.md
-!/data/processed/background_pdz.example.csv
-/data/splits/*
-!/data/splits/README.md
-/results/*
-!/results/README.md
-!/results/predictions/
-!/results/figures/
-
-# Checkpoints: ignored by default. Force-add final weights if releasing runnable inference.
-/checkpoints/design_models/*
-!/checkpoints/design_models/README.md
-
-# Logs/cache
-wandb/
+# ---------------------------------------------------------------------
+# Logs / cache / temporary files
+# ---------------------------------------------------------------------
 *.log
-.DS_Store
+*.tmp
+*.temp
+.cache/
+.cache_*/
+tmp/
+temp/
+wandb/
+runs/
+lightning_logs/
+
+# ---------------------------------------------------------------------
+# Data policy
+# Track only:
+#   data/raw/all_data_pair_aggregated.csv
+#   data/processed/background_pdz.csv
+#   data/splits/*.csv
+# Ignore all generated/intermediate data tables.
+# ---------------------------------------------------------------------
+data/raw/*
+!data/raw/README.md
+!data/raw/all_data_pair_aggregated.csv
+
+data/processed/*
+!data/processed/README.md
+!data/processed/background_pdz.csv
+
+data/splits/*
+!data/splits/README.md
+!data/splits/*.csv
+
+# ---------------------------------------------------------------------
+# Generated outputs
+# ---------------------------------------------------------------------
+results/tables/*
+results/figures/*
+!results/tables/.gitkeep
+!results/figures/.gitkeep
+!results/figures/source/
+!results/figures/source/.gitkeep
+
+# ---------------------------------------------------------------------
+# Checkpoint policy
+# Track only final inference-ready design ensemble weights.
+# These files should be handled by Git LFS.
+# ---------------------------------------------------------------------
+*.pt
+*.pth
+*.ckpt
+
+!checkpoints/
+checkpoints/*
+!checkpoints/README.md
+!checkpoints/design_models/
+checkpoints/design_models/*
+!checkpoints/design_models/README.md
+!checkpoints/design_models/best_model_fold_*_design_m.pth
+
+# ---------------------------------------------------------------------
+# Large generated arrays / binary outputs
+# ---------------------------------------------------------------------
+*.npy
+*.npz
+*.h5
+*.hdf5
+*.pkl
+*.pickle
+*.joblib
+*.parquet
+*.feather
+
+# ---------------------------------------------------------------------
+# Archives
+# ---------------------------------------------------------------------
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
