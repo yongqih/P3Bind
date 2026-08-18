@@ -6,9 +6,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from _utils import read_csv, first_existing_column, save_current_figure, add_panel_label
 
-parser = argparse.ArgumentParser(description="Reproduce manuscript Figure 2: dataset construction and characterization.")
+parser = argparse.ArgumentParser(description="Reproduce Supplementary Figure S1: dataset characterization.")
 parser.add_argument("--input", default="pair_level_dataset.csv", help="Pair-level processed dataset under data/processed/.")
-parser.add_argument("--output", default="fig2_dataset_characterization.pdf")
+parser.add_argument("--output", default="supp_fig_s1_dataset_characterization.pdf")
 args = parser.parse_args()
 
 df = read_csv(args.input)

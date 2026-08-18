@@ -4,10 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "p3bind"
-version = "0.1.0"
+version = "0.2.0"
 description = "P3Bind: PDZ-PBM affinity prediction and PBM motif design"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.14"
 authors = [{name = "Yongqi Huang", email = "yongqi@seas.upenn.edu"}]
 license = {text = "MIT"}
 dependencies = [
@@ -24,3 +24,9 @@ dependencies = [
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+p3bind = ["data/*.csv"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]

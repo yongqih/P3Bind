@@ -6,12 +6,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 from _utils import read_csv, resolve_processed_csv, first_existing_column, PBM_POSITIONS, AA_ORDER, save_current_figure, add_panel_label, plot_heatmap
 
-parser = argparse.ArgumentParser(description="Reproduce manuscript Figure 5: P3Bind motif preference landscape.")
+parser = argparse.ArgumentParser(description="Reproduce manuscript Figure 4: P3Bind motif preference landscape.")
 parser.add_argument("--enrichment", default="motif_enrichment_matrix.csv", help="Long table with position, amino_acid, log2_enrichment; optional pdz_id.")
 parser.add_argument("--importance", default="motif_position_importance.csv", help="Position-level importance table.")
 parser.add_argument("--cluster", default="motif_cluster_matrix.csv", help="Optional PDZ-by-feature enrichment matrix.")
 parser.add_argument("--representatives", default="representative_motif_profiles.csv", help="Optional representative PDZ profile long table.")
-parser.add_argument("--output", default="fig5_motif_landscape.pdf")
+parser.add_argument("--output", default="fig4_motif_landscape.pdf")
 args = parser.parse_args()
 
 enrich = read_csv(args.enrichment)
@@ -26,7 +26,8 @@ imp = read_csv(args.importance)
 imp_pos = first_existing_column(imp, ["position", "pbm_position"])
 imp_val = first_existing_column(imp, ["mean_abs_log2_enrichment", "importance", "value"])
 imp[imp_pos] = imp[imp_pos].astype(str).replace({"-5":"P-5","-4":"P-4","-3":"P-3","-2":"P-2","-1":"P-1","0":"P0"})
-imp = imp.set_index(imp_pos).reindex([p for p in PBM_POSITIONS if p in set(imp[imp_pos])]).reset_index()
+available_positions = set(imp[imp_pos])
+imp = imp.set_index(imp_pos).reindex([p for p in PBM_POSITIONS if p in available_positions]).reset_index()
 
 fig = plt.figure(figsize=(12, 10))
 gs = fig.add_gridspec(3, 2, height_ratios=[1, 1, 1.3])

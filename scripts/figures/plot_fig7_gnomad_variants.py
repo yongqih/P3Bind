@@ -6,11 +6,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 from _utils import read_csv, first_existing_column, save_current_figure, add_panel_label, TABLE_DIR, ensure_output_dirs
 
-parser = argparse.ArgumentParser(description="Reproduce manuscript Figure 7: gnomAD-P3Bind PBM variant effects.")
+parser = argparse.ArgumentParser(description="Reproduce manuscript Figure 5: gnomAD-P3Bind PBM variant effects.")
 parser.add_argument("--variants", default="pbm_variant_effects.csv", help="Variant summary table under data/processed/.")
 parser.add_argument("--matrix", default="variant_pdz_delta_matrix.csv", help="Wide top-variant by PDZ ΔpKd matrix.")
 parser.add_argument("--representative", default="representative_variant_profile.csv", help="Representative WT/MUT pKd profile table.")
-parser.add_argument("--output", default="fig7_gnomad_variants.pdf")
+parser.add_argument("--output", default="fig5_gnomad_variants.pdf")
 args = parser.parse_args()
 
 ensure_output_dirs()
@@ -103,5 +103,5 @@ add_panel_label(axE, "E/F")
 
 # Save top variants table for supplement.
 top_cols = [c for c in [var_id_col, pos_col, eff_col, af_col] if c is not None]
-var.sort_values(eff_col, ascending=False).head(50)[top_cols].to_csv(TABLE_DIR / "fig7_top_pbm_variants.csv", index=False)
+var.sort_values(eff_col, ascending=False).head(50)[top_cols].to_csv(TABLE_DIR / "fig5_top_pbm_variants.csv", index=False)
 save_current_figure(args.output)

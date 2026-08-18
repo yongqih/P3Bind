@@ -1,13 +1,13 @@
 import argparse
 from pathlib import Path
-from p3bind.core import mutation_scan
+from p3bind.core import REPO_ROOT, mutation_scan
 
 parser = argparse.ArgumentParser(description="Run a PBM6 single-mutant scan for a target PDZ.")
 parser.add_argument("--target-pdz-seq", required=True)
 parser.add_argument("--pbm", required=True, help="PBM peptide; C-terminal 6 aa will be used")
-parser.add_argument("--checkpoint-dir", default="checkpoints/design_models")
+parser.add_argument("--checkpoint-dir", default=None, help="Checkpoint directory (defaults to the repository release checkpoints)")
 parser.add_argument("--background-csv", default=None, help="Optional background_pdz.csv. If provided, specificity deltas are calculated.")
-parser.add_argument("--output-csv", default="results/predictions/mutation_scan.csv")
+parser.add_argument("--output-csv", default=REPO_ROOT / "results" / "predictions" / "mutation_scan.csv")
 args = parser.parse_args()
 
 out = mutation_scan(

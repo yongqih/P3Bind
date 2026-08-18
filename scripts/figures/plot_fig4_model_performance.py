@@ -5,9 +5,9 @@ import argparse
 import matplotlib.pyplot as plt
 from _utils import read_csv, grouped_metric_bars, save_current_figure, add_panel_label
 
-parser = argparse.ArgumentParser(description="Reproduce manuscript Figure 4: baseline and neural model performance.")
+parser = argparse.ArgumentParser(description="Reproduce manuscript Figure 3: baseline and neural model performance.")
 parser.add_argument("--input", default="benchmark_results.csv", help="Processed performance CSV under data/processed/.")
-parser.add_argument("--output", default="fig4_model_performance.pdf")
+parser.add_argument("--output", default="fig3_model_performance.pdf")
 args = parser.parse_args()
 
 df = read_csv(args.input)

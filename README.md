@@ -1,209 +1,92 @@
 # P3Bind
 
-P3Bind is an interaction-aware sequence framework for quantitative PDZ–PBM affinity prediction, PBM candidate prioritization, and natural PBM variant-effect analysis.
+P3Bind is an interaction-aware sequence framework for quantitative PDZ–PBM affinity prediction, motif preference analysis, specificity-aware PBM design, and natural PBM variant-effect analysis.
 
-This repository is intended as the reproducible code release for the P3Bind manuscript. It provides the model architecture, inference utilities, training/analysis scripts, cleaned notebooks, fixed data splits, and final inference checkpoints required to reproduce the main computational workflow in a local Python/PyCharm environment.
+This release is a standard Python project intended to run locally in PyCharm or from a terminal. The historical Colab notebooks are retained only as provenance snapshots; Google Drive mounting and notebook state are not required. ESM experiments were internal ablations and are intentionally outside this main-text release.
 
-## Repository scope
+## Install and open in PyCharm
 
-This repository provides only the release inputs needed for reproducibility:
+Use Python 3.10–3.13. On Windows, a short project/interpreter path is recommended because PyTorch contains deeply nested package paths.
 
-- `data/raw/all_data_pair_aggregated.csv`
-- `data/processed/background_pdz.csv`
-- `data/splits/*.csv`
-- `checkpoints/design_models/best_model_fold_*_design_m.pth`
-- source code, scripts, notebooks, and documentation
-
-Intermediate result tables, generated figures, temporary training outputs, and cache files are intentionally not included. Users can regenerate those outputs from the provided data, split files, checkpoints, and scripts.
-
-## Repository structure
-
-```text
-P3Bind/
-├── src/p3bind/                  # importable P3Bind package
-│   ├── model.py                 # model architecture and sequence encoding
-│   ├── core.py                  # prediction, specificity, batch scoring utilities
-│   └── __init__.py
-├── scripts/
-│   ├── 00_check_setup.py
-│   ├── 01_predict_single.py
-│   ├── 02_batch_predict.py
-│   ├── 03_specificity_profile.py
-│   ├── 04_mutation_scan.py
-│   ├── analysis/                # scripts to regenerate processed result tables
-│   ├── figures/                 # scripts to regenerate manuscript figures
-│   └── train/                   # training and benchmark scripts
-├── notebooks/                   # cleaned notebooks for transparency
-├── data/
-│   ├── raw/
-│   │   └── all_data_pair_aggregated.csv
-│   ├── processed/
-│   │   └── background_pdz.csv
-│   └── splits/
-│       └── *.csv                # fixed random, PBM-heldout, and PDZ-heldout split files
-├── checkpoints/
-│   └── design_models/
-│       └── best_model_fold_*_design_m.pth
-├── results/
-│   ├── tables/                  # generated tables, not tracked by Git
-│   └── figures/                 # generated figures, not tracked by Git
-├── docs/
-├── requirements.txt
-├── environment.yml
-├── pyproject.toml
-├── CITATION.cff
-└── LICENSE
-```
-
-## Installation
-
-Clone the repository and install the package in editable mode.
-
-```bash
+```powershell
 git clone https://github.com/yongqih/P3Bind.git
 cd P3Bind
-pip install -e .
-```
-
-Alternatively, install dependencies directly:
-
-```bash
-pip install -r requirements.txt
-```
-
-Python 3.10 is recommended.
-
-## Required release files
-
-The following files are expected to be present for full local reproducibility:
-
-```text
-data/raw/all_data_pair_aggregated.csv
-data/processed/background_pdz.csv
-data/splits/*.csv
-checkpoints/design_models/best_model_fold_0_design_m.pth
-checkpoints/design_models/best_model_fold_1_design_m.pth
-checkpoints/design_models/best_model_fold_2_design_m.pth
-checkpoints/design_models/best_model_fold_3_design_m.pth
-checkpoints/design_models/best_model_fold_4_design_m.pth
-```
-
-The five `.pth` files are final inference-ready design-ensemble checkpoints. Intermediate training checkpoints are not required.
-
-## Quick start
-
-Check the installation:
-
-```bash
+py -3.11 -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -e ".[dev]"
 python scripts/00_check_setup.py
 ```
 
-Run single-pair prediction:
+In PyCharm, open the repository root, select `.venv\Scripts\python.exe`, and keep the working directory at the repository root. All curated scripts resolve data and checkpoints relative to the repository, so they also work when launched from another working directory.
 
-```bash
-python scripts/01_predict_single.py \
-  --pdz-seq EIRVRVEKDPELGFSISGGVGGRGNPFRPDDDGIFVTRVQPEGPASKLLQPGDKIIQANGYSFINIEHGQAVSLLKTFQNTVELIIVREV \
-  --pbm YRETRV
-```
+## Included release assets
 
-Run batch prediction:
+- `data/raw/all_data_pair_aggregated.csv`: 45,595 aggregated PDZ–10-aa-peptide measurements; model features use the terminal PBM6.
+- `data/splits/{random,pbm_heldout,pdz_heldout}_split.csv`: fixed five-fold assignments.
+- `data/processed/background_pdz.csv`: 260-sequence PDZ specificity panel.
+- `checkpoints/design_models/best_model_fold_*_design_m.pth`: five-model design ensemble.
+- `src/p3bind/`: importable inference, benchmark, training, design, motif, variant, and validation APIs.
 
-```bash
+Generated outputs under `results/` are ignored by Git.
+
+## Inference
+
+```powershell
+python scripts/01_predict_single.py --pdz-seq <PDZ_SEQUENCE> --pbm YRETRV
 python scripts/02_batch_predict.py --input-csv examples/example_pairs.csv
+python scripts/03_specificity_profile.py --target-pdz-seq <PDZ_SEQUENCE> --pbm YRETRV
+python scripts/04_mutation_scan.py --target-pdz-seq <PDZ_SEQUENCE> --pbm YRETRV
 ```
 
-Run specificity / off-target profiling:
+Batch input accepts `pdz_sequence` plus any one of `pbm6`, `pbm_sequence_10aa`, or `peptide`.
 
-```bash
-python scripts/03_specificity_profile.py \
-  --target-pdz-seq EIRVRVEKDPELGFSISGGVGGRGNPFRPDDDGIFVTRVQPEGPASKLLQPGDKIIQANGYSFINIEHGQAVSLLKTFQNTVELIIVREV \
-  --pbm YRETRV \
-  --background-csv data/processed/background_pdz.csv
+## Main-text reproduction
+
+Traditional baselines:
+
+```powershell
+python scripts/analysis/run_baseline_benchmarks.py
 ```
 
-Run PBM single-mutant scan:
+CNN-concat, learned interaction-map, and interaction-map+MJ benchmarks (GPU recommended):
 
-```bash
-python scripts/04_mutation_scan.py \
-  --target-pdz-seq EIRVRVEKDPELGFSISGGVGGRGNPFRPDDDGIFVTRVQPEGPASKLLQPGDKIIQANGYSFINIEHGQAVSLLKTFQNTVELIIVREV \
-  --pbm YRETRV \
-  --background-csv data/processed/background_pdz.csv
+```powershell
+python scripts/train/run_neural_benchmarks.py --device cuda
 ```
 
-Generated tables are written to `results/tables/`.
+Design ensemble training (writes new checkpoints under `results/training/`):
 
-## Reproducing manuscript analyses and figures
-
-This repository does not include precomputed intermediate figure tables. Instead, users can regenerate the processed result tables and manuscript figures from:
-
-- `data/raw/all_data_pair_aggregated.csv`
-- `data/processed/background_pdz.csv`
-- `data/splits/*.csv`
-- `checkpoints/design_models/*.pth`
-
-The fixed split files should be used for all benchmark comparisons to match the manuscript evaluation settings.
-
-A typical reproduction workflow is:
-
-```bash
-python scripts/00_check_setup.py
-
-# Regenerate analysis tables
-python scripts/analysis/prepare_dataset_summary.py
-python scripts/analysis/run_benchmark_models.py
-python scripts/analysis/run_motif_landscape.py
-python scripts/analysis/run_design_demo.py
-python scripts/analysis/run_variant_effect_analysis.py
-
-# Regenerate figures from generated tables
-python scripts/figures/run_all_figures.py
+```powershell
+python scripts/train/train_design_ensemble.py --device cuda
 ```
 
-Generated intermediate tables will be saved to:
+Downstream analyses:
 
-```text
-results/tables/
+```powershell
+python scripts/analysis/run_motif_landscape.py --device cuda
+python scripts/analysis/run_design_demo.py --target-pdz-seq <PDZ_SEQUENCE>
+python scripts/analysis/run_variant_effect_analysis.py --variants-csv <CLEANED_VARIANTS.csv>
 ```
 
-Generated figures will be saved to:
+The full motif landscape and all 45 neural benchmark folds are compute intensive. Use `--limit-pdz`, `--folds`, `--models`, or fewer epochs for smoke tests.
 
-```text
-results/figures/
+## Manuscript figures
+
+The current manuscript order is Figure 1 overview, Figure 2 architecture, Figure 3 performance, Figure 4 motif landscape, Figure 5 natural variants, Figure 6 TSA validation, Supplementary Figure S1 dataset, and Supplementary Figure S2 design. Figure 1 and Figure 2 are schematics; computational plotting entry points are under `scripts/figures/`.
+
+See [docs/REPRODUCIBILITY.md](docs/REPRODUCIBILITY.md) and [docs/FIGURE_REPRODUCTION.md](docs/FIGURE_REPRODUCTION.md).
+
+## Tests
+
+```powershell
+python -m pytest -q
 ```
 
-Full benchmark reproduction may take substantial time because baseline and neural models are retrained from the aggregated dataset using the provided split files. Direct inference and design-related analyses can be run from the provided final ensemble checkpoints without retraining.
-
-## Data and checkpoint policy
-
-Included:
-
-- Aggregated ProfAff-derived pair-level dataset
-- Background PDZ panel used for specificity scoring
-- Fixed train/test split files
-- Final design-ensemble checkpoints
-- Source code and cleaned notebooks
-
-Not included:
-
-- Precomputed manuscript figure tables
-- Generated figures
-- Temporary training logs
-- Intermediate model checkpoints
-- Cache files
-- Local environment files
-
-This keeps the repository compact while allowing users to regenerate analysis outputs from the released inputs.
+The tests validate the released dataset/splits and reproduce the five published DLG1-PDZ3 TSA candidate predictions from the committed ensemble weights.
 
 ## Citation
 
-If you use P3Bind or results generated from this repository, please cite the P3Bind manuscript and this GitHub repository.
+Please cite the P3Bind manuscript and this repository.
 
-```text
-P3Bind: An interaction-aware sequence framework for quantitative PDZ–PBM affinity prediction and motif design
-```
-
-## Author
-
-Yongqi Huang  
-University of Pennsylvania  
-Contact: yongqi@seas.upenn.edu
+> P3Bind: An interaction-aware sequence framework for quantitative PDZ–PBM affinity prediction and motif design

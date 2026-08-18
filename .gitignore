@@ -70,8 +70,12 @@ data/splits/*
 # ---------------------------------------------------------------------
 results/tables/*
 results/figures/*
+results/predictions/*
+results/training/*
 !results/tables/.gitkeep
 !results/figures/.gitkeep
+!results/predictions/.gitkeep
+!results/training/.gitkeep
 !results/figures/source/
 !results/figures/source/.gitkeep
 

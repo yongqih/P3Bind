@@ -5,11 +5,11 @@ import argparse
 import matplotlib.pyplot as plt
 from _utils import read_csv, save_current_figure, add_panel_label, TABLE_DIR, ensure_output_dirs
 
-parser = argparse.ArgumentParser(description="Reproduce manuscript Figure 6: PDZ-specific PBM candidate design.")
+parser = argparse.ArgumentParser(description="Reproduce Supplementary Figure S2: PDZ-specific PBM design.")
 parser.add_argument("--candidates", default="design_candidates.csv", help="Design candidate table under data/processed/.")
 parser.add_argument("--trajectory", default="optimization_trajectory.csv", help="Optional simulated annealing trajectory table.")
 parser.add_argument("--top-n", type=int, default=20)
-parser.add_argument("--output", default="fig6_pbm_design.pdf")
+parser.add_argument("--output", default="supp_fig_s2_pbm_design.pdf")
 args = parser.parse_args()
 
 ensure_output_dirs()
@@ -24,12 +24,12 @@ if score_col is None:
     score_col = "specificity_score"
 df = df.sort_values(score_col, ascending=False).reset_index(drop=True)
 top = df.head(args.top_n).copy()
-top.to_csv(TABLE_DIR / "fig6_top_design_candidates.csv", index=False)
+top.to_csv(TABLE_DIR / "supp_fig_s2_top_design_candidates.csv", index=False)
 
 fig = plt.figure(figsize=(12, 9))
 gs = fig.add_gridspec(2, 2, height_ratios=[1, 1.25])
 axA = fig.add_subplot(gs[0, 0])
-axA.text(0.5, 0.5, "P3Bind-design workflow schematic\n(see manuscript Figure 6A)", ha="center", va="center", fontsize=11)
+axA.text(0.5, 0.5, "P3Bind-design workflow schematic\n(see Supplementary Figure S2)", ha="center", va="center", fontsize=11)
 axA.set_axis_off()
 add_panel_label(axA, "A")
 

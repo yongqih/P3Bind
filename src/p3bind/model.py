@@ -1,8 +1,8 @@
-# src/p3bind/model.py
-# Core P3Bind model architecture + sequence encoding + ensemble prediction
-# Extracted and cleaned from PDZ_peptide_train_uncensored notebook.
-#
-# Put this file in the same folder as app.py and p3bind_core.py.
+"""Design-ensemble architecture and inference helpers.
+
+The architecture is kept checkpoint-compatible with the Colab training
+workflow used for the manuscript's design-oriented ensemble.
+"""
 
 from pathlib import Path
 import numpy as np
@@ -178,6 +178,7 @@ def load_design_ensemble_models(
     device=DEVICE,
 ):
     model_dir = Path(model_dir)
+    device = torch.device(device)
 
     model_files = sorted(list(model_dir.glob("best_model_fold_*_design_m.pth")))
     if len(model_files) == 0:
@@ -193,7 +194,7 @@ def load_design_ensemble_models(
     models = []
     for path in model_files:
         model = model_class().to(device)
-        state = torch.load(path, map_location=device)
+        state = torch.load(path, map_location=device, weights_only=True)
 
         # Your notebook saved raw model.state_dict(), but this also handles wrapped checkpoints.
         if isinstance(state, dict) and "state_dict" in state:
@@ -218,6 +219,14 @@ def load_design_ensemble_models(
     return models, model_files
 
 
+def model_device(model, fallback=DEVICE):
+    """Return the device holding a model's parameters."""
+    try:
+        return next(model.parameters()).device
+    except StopIteration:
+        return torch.device(fallback)
+
+
 def predict_pKd_single_model(
     model,
     pdz_sequence,
@@ -226,6 +235,7 @@ def predict_pKd_single_model(
     return_maps=False,
 ):
     model.eval()
+    device = model_device(model, fallback=device)
 
     pbm6 = str(pbm_or_peptide).upper()[-6:]
     pdz_sequence = str(pdz_sequence).upper()
@@ -280,6 +290,11 @@ def predict_pKd_ensemble(
     else:
         model_files = None
 
+    if not models:
+        raise ValueError("At least one trained model is required for ensemble prediction.")
+
+    device = model_device(models[0], fallback=device)
+
     pbm6 = str(pbm_or_peptide).upper()[-6:]
     pdz_sequence = str(pdz_sequence).upper()
 
@@ -324,6 +339,62 @@ def predict_pKd_ensemble(
     return result
 
 
+def predict_pKd_batch(
+    pdz_sequences,
+    pbm_sequences,
+    models,
+    batch_size=512,
+    device=None,
+):
+    """Vectorized ensemble prediction for aligned PDZ/PBM sequence pairs."""
+    pdz_sequences = [str(seq).strip().upper() for seq in pdz_sequences]
+    pbm6_sequences = [str(seq).strip().upper()[-6:] for seq in pbm_sequences]
+    if len(pdz_sequences) != len(pbm6_sequences):
+        raise ValueError("pdz_sequences and pbm_sequences must have the same length.")
+    if not models:
+        raise ValueError("At least one trained model is required for batch prediction.")
+    if batch_size < 1:
+        raise ValueError("batch_size must be at least 1.")
+    if not pdz_sequences:
+        return np.asarray([], dtype=float), np.asarray([], dtype=float)
+
+    invalid_pdz = [i for i, seq in enumerate(pdz_sequences) if not seq or set(seq) - set(AA_ORDER)]
+    invalid_pbm = [i for i, seq in enumerate(pbm6_sequences) if len(seq) != 6 or set(seq) - set(AA_ORDER)]
+    if invalid_pdz:
+        raise ValueError(f"Invalid PDZ sequences at row indices: {invalid_pdz[:10]}")
+    if invalid_pbm:
+        raise ValueError(f"Invalid PBM sequences at row indices: {invalid_pbm[:10]}")
+
+    if device is None:
+        device = model_device(models[0])
+    device = torch.device(device)
+    model_predictions = [[] for _ in models]
+
+    for start in range(0, len(pdz_sequences), batch_size):
+        stop = min(start + batch_size, len(pdz_sequences))
+        pdz_t = encode_pdz_batch(pdz_sequences[start:stop], device=device)
+        pbm_t = torch.cat(
+            [encode_pbm6(seq, device=device) for seq in pbm6_sequences[start:stop]],
+            dim=0,
+        )
+        for model_index, model in enumerate(models):
+            model.eval()
+            with torch.no_grad():
+                pred, _, _ = model(pdz_t, pbm_t)
+            model_predictions[model_index].extend(
+                pred.detach().cpu().reshape(-1).tolist()
+            )
+
+    pred_array = np.asarray(model_predictions, dtype=float)
+    means = pred_array.mean(axis=0)
+    stds = (
+        pred_array.std(axis=0, ddof=1)
+        if pred_array.shape[0] > 1
+        else np.zeros(pred_array.shape[1], dtype=float)
+    )
+    return means, stds
+
+
 def score_sequence_with_ensemble(
     seq,
     target_t,
@@ -332,6 +403,9 @@ def score_sequence_with_ensemble(
     alpha=1.0,
     device=DEVICE,
 ):
+    if not models:
+        raise ValueError("At least one trained model is required for ensemble scoring.")
+    device = target_t.device
     seq_t = encode_pbm6(seq, device=device)
 
     target_scores = []

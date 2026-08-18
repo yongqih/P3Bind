@@ -13,6 +13,7 @@ from .model import (
     encode_pdz_batch,
     encode_pbm6,
     load_design_ensemble_models,
+    predict_pKd_batch,
     predict_pKd_ensemble,
 )
 
@@ -50,18 +51,49 @@ def load_background_pdzs(path: Optional[str | Path] = None) -> pd.DataFrame:
     df = pd.read_csv(path)
     if "pdz_sequence" not in df.columns:
         raise ValueError("background_pdz.csv must contain a 'pdz_sequence' column.")
+    df = df.copy()
+    df["pdz_sequence"] = df["pdz_sequence"].astype(str).str.strip().str.upper()
+    df = df.drop_duplicates(subset=["pdz_sequence"]).reset_index(drop=True)
+
+    invalid_rows = [
+        i for i, seq in enumerate(df["pdz_sequence"])
+        if len(seq) < 30 or set(seq) - set(AA_ORDER)
+    ]
+    if invalid_rows:
+        raise ValueError(f"Invalid PDZ sequences in background table at rows: {invalid_rows[:10]}")
+
     if "pdz_id" not in df.columns:
         if "pdz" in df.columns:
             df["pdz_id"] = df["pdz"].astype(str)
         else:
-            df["pdz_id"] = [f"PDZ_{i+1}" for i in range(len(df))]
-    df = df[["pdz_id", "pdz_sequence"]].copy()
-    df["pdz_sequence"] = df["pdz_sequence"].astype(str).str.upper()
-    return df.drop_duplicates().reset_index(drop=True)
+            df["pdz_id"] = [f"PDZ_{i+1:03d}" for i in range(len(df))]
+    else:
+        df["pdz_id"] = df["pdz_id"].astype(str)
+
+    if df["pdz_id"].duplicated().any() and "pdz" in df.columns:
+        df["pdz_id"] = df["pdz"].astype(str) + "_" + df["pdz_id"]
+    if df["pdz_id"].duplicated().any():
+        counts = df.groupby("pdz_id").cumcount()
+        duplicate_group = df["pdz_id"].duplicated(keep=False)
+        df.loc[duplicate_group, "pdz_id"] = (
+            df.loc[duplicate_group, "pdz_id"]
+            + "_"
+            + (counts.loc[duplicate_group] + 1).astype(str)
+        )
+
+    metadata = [
+        column for column in ["pdz_id", "pdz_sequence", "pdz_gene", "pdz_uniprot", "pdz_site", "pdz_label"]
+        if column in df
+    ]
+    return df[metadata].reset_index(drop=True)
 
 
-def load_models(checkpoint_dir: Optional[str | Path] = None, device: torch.device = DEVICE):
+def load_models(
+    checkpoint_dir: Optional[str | Path] = None,
+    device: str | torch.device | None = None,
+):
     checkpoint_dir = Path(checkpoint_dir) if checkpoint_dir is not None else DEFAULT_CHECKPOINT_DIR
+    device = DEVICE if device is None else torch.device(device)
     models, model_files = load_design_ensemble_models(
         model_class=InteractionAwareModel,
         model_dir=checkpoint_dir,
@@ -80,19 +112,23 @@ def predict_pair(pdz_sequence: str, pbm_or_peptide: str, checkpoint_dir: Optiona
 
 def batch_predict(input_csv: str | Path, output_csv: str | Path, checkpoint_dir: Optional[str | Path] = None) -> pd.DataFrame:
     df = pd.read_csv(input_csv)
-    required = {"pdz_sequence", "pbm6"}
-    missing = required - set(df.columns)
-    if missing:
-        raise ValueError(f"Input CSV is missing required columns: {missing}")
+    if "pdz_sequence" not in df.columns:
+        raise ValueError("Input CSV is missing required column: pdz_sequence")
+    pbm_column = next(
+        (column for column in ["pbm6", "pbm_sequence_10aa", "peptide"] if column in df.columns),
+        None,
+    )
+    if pbm_column is None:
+        raise ValueError("Input CSV must contain one of: pbm6, pbm_sequence_10aa, peptide")
     models, _ = load_models(checkpoint_dir)
     rows = []
     for i, row in df.iterrows():
         pair_id = row.get("pair_id", i)
         try:
-            res = predict_pair(row["pdz_sequence"], row["pbm6"], models=models)
+            res = predict_pair(row["pdz_sequence"], row[pbm_column], models=models)
             rows.append({"pair_id": pair_id, **res, "status": "ok", "error": ""})
         except Exception as e:
-            rows.append({"pair_id": pair_id, "pbm6_used": row.get("pbm6", ""), "status": "failed", "error": str(e)})
+            rows.append({"pair_id": pair_id, "pbm6_used": row.get(pbm_column, ""), "status": "failed", "error": str(e)})
     out = pd.DataFrame(rows)
     output_csv = Path(output_csv)
     output_csv.parent.mkdir(parents=True, exist_ok=True)
@@ -106,28 +142,29 @@ def specificity_profile(
     background_csv: Optional[str | Path] = None,
     checkpoint_dir: Optional[str | Path] = None,
     alpha: float = 1.0,
+    models=None,
+    batch_size: int = 512,
 ) -> tuple[dict, pd.DataFrame]:
     """Predict target affinity and background/off-target PDZ profile."""
     target_pdz_sequence = validate_pdz_sequence(target_pdz_sequence)
     pbm6 = validate_pbm6(pbm_or_peptide)
     background = load_background_pdzs(background_csv)
-    models, _ = load_models(checkpoint_dir)
+    if models is None:
+        models, _ = load_models(checkpoint_dir)
 
     target_res = predict_pKd_ensemble(target_pdz_sequence, pbm6, models=models)
-    bg_rows = []
-    for _, row in background.iterrows():
-        seq = row["pdz_sequence"]
-        if seq == target_pdz_sequence:
-            continue
-        res = predict_pKd_ensemble(seq, pbm6, models=models)
-        bg_rows.append({
-            "pdz_id": row["pdz_id"],
-            "pdz_sequence": seq,
-            "pbm6": pbm6,
-            "background_pKd_mean": res["predicted_pKd_mean"],
-            "background_pKd_std": res["predicted_pKd_std"],
-        })
-    bg = pd.DataFrame(bg_rows).sort_values("background_pKd_mean", ascending=False).reset_index(drop=True)
+    background = background[background["pdz_sequence"] != target_pdz_sequence].reset_index(drop=True)
+    means, stds = predict_pKd_batch(
+        background["pdz_sequence"].tolist(),
+        [pbm6] * len(background),
+        models=models,
+        batch_size=batch_size,
+    )
+    bg = background.copy()
+    bg["pbm6"] = pbm6
+    bg["background_pKd_mean"] = means
+    bg["background_pKd_std"] = stds
+    bg = bg.sort_values("background_pKd_mean", ascending=False).reset_index(drop=True)
     summary = {
         "pbm6": pbm6,
         "target_pKd_mean": target_res["predicted_pKd_mean"],
@@ -189,6 +226,7 @@ def mutation_scan(
             pbm_or_peptide=pbm6,
             background_csv=background_csv,
             checkpoint_dir=checkpoint_dir,
+            models=models,
         )
         baseline_specificity = baseline_summary["specificity_score"]
 
@@ -210,6 +248,7 @@ def mutation_scan(
                 pbm_or_peptide=mutant,
                 background_csv=background_csv,
                 checkpoint_dir=checkpoint_dir,
+                models=models,
             )
             result.update({
                 "specificity_score": summary["specificity_score"],
